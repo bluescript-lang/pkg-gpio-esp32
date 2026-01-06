@@ -1,1 +1,124 @@
-print('Hello world!')
+
+code`
+#include "driver/gpio.h"
+#include "main-thread.h"
+
+void call_listener(void* fn) {
+    ((void (*)(value_t))gc_function_object_ptr((value_t)fn, 0))(get_obj_property((value_t)fn, 2));
+}
+
+`
+
+export enum PinLevel {
+    Low = 0,
+    High = 1,
+}
+
+export enum PinMode {
+    Input = 0,    
+    Output = 1,
+    InputOutput = 2,
+}
+
+export enum PullMode {
+    Floating = 0,
+    PullupOnly = 1,
+    PulldownOnly = 2,
+    PullupPulldown = 3
+}
+
+export enum InterruptEdge {
+    Rising = 0,
+    Falling = 1,
+    Change = 2,
+}
+
+export enum InterruptType {
+    Soft = 0,
+    Hard = 1,
+}
+
+const listenerTable = new Array<any>(40, undefined);
+let isIsrServiceInstalled = false;
+
+export class GPIO {
+    pin: integer;
+
+    constructor(pin: integer, mode: PinMode) {
+        this.pin = pin;
+        this.setMode(mode);
+    }
+
+    setMode(mode: PinMode): void {
+        if (mode === PinMode.Input) {
+            code`gpio_set_direction(${this.pin}, GPIO_MODE_INPUT);`
+        } else if (mode === PinMode.Output) {
+            code`gpio_set_direction(${this.pin}, GPIO_MODE_OUTPUT);`
+        } else if (mode === PinMode.InputOutput) {
+            code`gpio_set_direction(${this.pin}, GPIO_MODE_INPUT_OUTPUT);`
+        } else {
+            code`runtime_error("** gpio module error: unknown pin mode.");`
+        }
+    }
+
+    setPullMode(mode: PullMode) {
+        if (mode === PullMode.Floating) {
+            code`gpio_set_pull_mode(${this.pin}, GPIO_FLOATING)`
+        } else if (mode === PullMode.PullupOnly) {
+            code`gpio_set_direction(${this.pin}, GPIO_PULLUP_ONLY);`
+        } else if (mode === PullMode.PulldownOnly) {
+            code`gpio_set_direction(${this.pin}, GPIO_PULLDOWN_ONLY);`
+        } else if (mode === PullMode.PullupPulldown) {
+            code`gpio_set_direction(${this.pin}, GPIO_PULLUP_PULLDOWN);`
+        } else {
+            code`runtime_error("** gpio module error: unknown pull mode."); `
+        }
+    }
+
+    read(): PinLevel {
+        let level = 0;
+        code`${level} = gpio_get_level(${this.pin});`
+        return level === 0 ? PinLevel.Low : PinLevel.High; 
+    }
+
+    write(level: PinLevel): void {
+        let value = level === PinLevel.High ? 1 : PinLevel.Low;
+        code`gpio_set_level(${this.pin}, ${value});`
+    }
+
+    on(edge: InterruptEdge, type: InterruptType, listener: () => void): void {
+        listenerTable[this.pin] = listener; // To avoid being collected by GC
+        
+        if (!isIsrServiceInstalled) {
+            code`gpio_install_isr_service(ESP_INTR_FLAG_LEVEL1);`
+            isIsrServiceInstalled = true;
+        }
+
+        if (edge === InterruptEdge.Rising) {
+            code`gpio_set_intr_type(${this.pin}, GPIO_INTR_POSEDGE);`
+        } else if (edge === InterruptEdge.Falling) {
+            code`gpio_set_intr_type(${this.pin}, GPIO_INTR_NEGEDGE);`
+        } else if (edge === InterruptEdge.Change) {
+            code`gpio_set_intr_type(${this.pin}, GPIO_INTR_ANYEDGE);`
+        } else {
+            code`runtime_error("** gpio module error: unknown edge type.");`
+        }
+
+        if (type === InterruptType.Hard) {
+            code`gpio_isr_handler_add(${this.pin}, &call_listener, (void*) ${listener});`
+        } else if (type === InterruptType.Soft) {
+            code`gpio_isr_handler_add(${this.pin}, &bs_main_thread_set_event_from_isr, (void*) ${listener});`
+        } else {
+            code`runtime_error("** gpio module error: unknown interrupt type.");`
+        }
+    }
+
+    off(): void {
+        code`gpio_isr_handler_remove(${this.pin})`
+    }
+    
+    close(): void {
+        this.off();
+        code`gpio_reset_pin(${this.pin});`
+    }
+}

@@ -5,5 +5,5 @@
   "deviceName": "BLUESCRIPT",
   "dependencies": {},
   "boardName": "esp32",
-  "espIdfComponents": []
+  "espIdfComponents": ["esp_driver_gpio", "core"]
 }
