@@ -1,5 +1,5 @@
 {
-  "projectName": "pkg-gpio-esp32",
+  "projectName": "gpio",
   "version": "1.0.0",
   "vmVersion": "2.0.0",
   "deviceName": "BLUESCRIPT",

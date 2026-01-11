@@ -86,7 +86,7 @@ export class GPIO {
         code`gpio_set_level(${this.pin}, ${value});`
     }
 
-    on(edge: InterruptEdge, type: InterruptType, listener: () => void): void {
+    onChange(edge: InterruptEdge, type: InterruptType, listener: () => void): void {
         listenerTable[this.pin] = listener; // To avoid being collected by GC
         
         if (!isIsrServiceInstalled) {
@@ -113,7 +113,7 @@ export class GPIO {
         }
     }
 
-    off(): void {
+    offChange(): void {
         code`gpio_isr_handler_remove(${this.pin})`
     }
     
