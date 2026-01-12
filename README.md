@@ -48,8 +48,6 @@ button.onChange(InterruptEdge.Falling, InterruptType.Soft, () => {
 });
 ```
 
----
-
 ## API Reference
 
 ### Class: `GPIO`
@@ -88,7 +86,6 @@ Removes the interrupt handler and disables the interrupt for this pin.
 #### `close(): void`
 Resets the pin and releases resources.
 
----
 
 ## Enums
 
@@ -126,8 +123,3 @@ Resets the pin and releases resources.
 | `Soft` | 0 | Queues event to Main Thread (Recommended). |
 | `Hard` | 1 | Runs inside ISR (Advanced use only). |
 
----
-
-## License
-
-MIT
