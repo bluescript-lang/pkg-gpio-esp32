@@ -118,7 +118,7 @@ export class GPIO {
     }
     
     close(): void {
-        this.off();
+        this.offChange();
         code`gpio_reset_pin(${this.pin});`
     }
 }

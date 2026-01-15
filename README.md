@@ -28,6 +28,8 @@ while (true) {
     led.write(PinLevel.Low);
     time.delay(500);
 }
+
+led.close();
 ```
 
 ### Advanced: Button Interrupts
@@ -38,9 +40,6 @@ You can listen for changes on a pin (interrupts) without blocking the main loop.
 import { GPIO, PinMode, PinLevel, PullMode, InterruptEdge, InterruptType } from "gpio";
 
 const button = new GPIO(0, PinMode.Input);
-
-// Enable internal Pull-up resistor for the button
-button.setPullMode(PullMode.PullupOnly);
 
 // Handle button press (Falling edge)
 button.onChange(InterruptEdge.Falling, InterruptType.Soft, () => {
